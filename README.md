@@ -26,6 +26,19 @@ python update_latest_json.py --input "导出的JSON文件路径"
 3. 把 `cloudflare-pages/latest.json` 提交到仓库（或上传到 Pages 目录）。
 4. 群里通知“已更新”即可。
 
+### 一键更新（推荐）
+
+已提供脚本 `daily_update.ps1`，可自动：
+- 生成 `latest.json`
+- Git 提交
+- Git 推送
+
+使用：
+
+```powershell
+.\daily_update.ps1 -ExportJsonPath "导出的JSON文件路径"
+```
+
 ## 发布到 Cloudflare Pages
 
 ### 方案 A：绑定 Git（推荐）
