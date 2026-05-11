@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>快递查询</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main class="app">
+    <header class="header">
+      <h1>快递查询</h1>
+      <p id="updatedAt" class="updated-at">正在加载最新数据...</p>
+    </header>
+
+    <section class="search-panel">
+      <label class="field-label" for="trackingInput">快递单号</label>
+      <input id="trackingInput" type="text" autocomplete="off" placeholder="输入单号（支持部分匹配）">
+
+      <label class="field-label" for="dateInput">日期（可选）</label>
+      <input id="dateInput" type="date">
+
+      <button id="searchBtn" type="button" class="btn-primary">查询</button>
+      <p id="status" class="status"></p>
+    </section>
+
+    <section id="results" class="results"></section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
