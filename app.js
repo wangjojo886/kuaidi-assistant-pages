@@ -551,8 +551,8 @@ async function handleEntryAdd(trackingNumber) {
     console.error(error);
     const reason = getErrorReason(error);
     if (reason.includes("已存在")) {
-      setStatus("entryStatus", `录入失败：${reason}`, "warning");
-      setScanResult("已存在", "warning");
+      setStatus("entryStatus", "这个单号已经录入过啦 🌸", "warning");
+      setScanResult("这个单号已经录入过啦 🌸", "warning");
       setScanHint(reason);
       return;
     }
