@@ -1,62 +1,132 @@
-# GitHub Pages 共享查询版
+# GitHub Pages + Supabase 录入/查询版
 
-这个目录是你们“十几个人共享查询”的静态网站版本。
+这个目录现在支持两种模式：
 
-特点：
-- 不需要常开服务器
-- 不要求同一 Wi-Fi
-- 任何人通过网址都能查询
-- 页面显示“最新更新时间”
-- 页面加了一个简单访问密码：`xw2d`
+1. **未配置 Supabase**
+   - 继续沿用 `latest.json`
+   - 只能查询
+   - 适合当前先上线
 
-## 当前线上地址
+2. **配置好 Supabase**
+   - 一个网址、两个入口
+   - `我要查询`
+   - `值班录入`
+   - 手机浏览器可直接录入
+   - 安卓 + 扫码枪（键盘模式）可连续扫件
 
-- GitHub Pages: `https://wangjojo886.github.io/kuaidi-assistant-pages/`
+## 当前线上网址
 
-## 文件说明
+- https://wangjojo886.github.io/kuaidi-assistant-pages/
+
+访问密码：
+
+- `xw2d`
+
+录入密码默认也是：
+
+- `xw2d`
+
+## 现在已经有的文件
 
 - `index.html` / `style.css` / `app.js`
-  查询页面源码
+  页面源码
+- `supabase-config.js`
+  Supabase 配置文件（当前默认空，未启用云端录入）
+- `supabase-config.example.js`
+  配置示例
+- `supabase-setup.sql`
+  在 Supabase 里执行的数据库初始化脚本
 - `latest.json`
-  当前查询数据
-- `update_latest_json.py`
-  把后台导出的 JSON 转成 `latest.json`
-- `daily_update.ps1`
-  命令行一键更新脚本
-- `daily_update.bat`
-  双击执行的一键更新批处理
+  当前静态查询数据
+- `daily_update.ps1` / `daily_update.bat`
+  还没接 Supabase 前的“导出 JSON -> 发布查询数据”脚本
 
-## 值班人员每天怎么更新
+## 要启用手机录入，你只需要做这几步
 
-### 方法 1：双击最简单
+### 第 1 步：创建 Supabase 免费项目
 
-直接双击：
+去 Supabase 创建一个免费项目。
 
-```text
-daily_update.bat
+你需要记下两个值：
+
+- `Project URL`
+- `anon public key`
+
+## 第 2 步：初始化数据库
+
+在 Supabase 后台打开 SQL Editor，执行：
+
+- `supabase-setup.sql`
+
+这个脚本会创建：
+
+- `packages` 表
+- `locations` 表
+- `app_settings` 表
+- `admin_login()` 函数
+- `insert_package_with_password()` 函数
+
+## 第 3 步：填写前端配置
+
+把：
+
+- `supabase-config.example.js`
+
+复制为：
+
+- `supabase-config.js`
+
+然后填入你自己的：
+
+```js
+window.SUPABASE_CONFIG = {
+  url: "https://你的项目.supabase.co",
+  anonKey: "你的 anon public key",
+};
 ```
 
-它会自动弹出文件选择框，你只需要选中后台导出的 JSON 文件。
+## 第 4 步：把配置同步到 GitHub
 
-然后脚本会自动：
-1. 生成最新 `latest.json`
-2. 提交到 GitHub
-3. 触发 GitHub Pages 自动更新
+同步 `supabase-config.js` 后，GitHub Pages 1~2 分钟内会自动更新。
 
-### 方法 2：命令行
+更新后页面会自动切换成：
 
-```powershell
-.\daily_update.ps1 -ExportJsonPath "导出的JSON文件路径"
-```
+- 查询：实时查云端数据
+- 录入：值班员手机直接录入
 
-## 用户如何访问
+## 值班员怎么用
 
-1. 打开网址：`https://wangjojo886.github.io/kuaidi-assistant-pages/`
+1. 手机打开网址
 2. 输入访问密码：`xw2d`
-3. 查询单号
+3. 点 `值班录入`
+4. 输入录入密码：`xw2d`
+5. 扫码枪连接安卓手机
+6. 保持光标停在“扫码/输入单号”输入框
+7. 扫一单，回车即录入
 
-## 注意
+页面会：
 
-- 这个“访问密码”只是轻量门禁，不是强安全方案。
-- 如果值班人员更新完后页面没立刻变化，等 1~2 分钟刷新即可。
-- 页面顶部会显示“最新更新时间”，方便确认是不是最新数据。
+- 自动提示成功/失败
+- 自动刷新最近录入
+- 自动回到输入框，便于连续扫
+
+## 如果暂时还没做 Supabase
+
+当前站点不会坏。
+
+它会继续：
+
+- 使用 `latest.json` 查询
+- 在“值班录入”入口提示“还没接入 Supabase”
+
+## 旧的 daily_update 还有什么用
+
+在你没启用 Supabase 之前：
+
+- 仍然可以继续双击 `daily_update.bat`
+- 继续走“本地录入 -> 导出 JSON -> 发布查询”
+
+启用 Supabase 之后：
+
+- 就不再需要 `daily_update` 了
+- 数据会直接实时写入云端
