@@ -34,6 +34,8 @@
   Supabase 配置文件（当前默认空，未启用云端录入）
 - `supabase-config.example.js`
   配置示例
+- `configure_supabase.ps1` / `configure_supabase.bat`
+  填写 Supabase URL 和 anon key 后自动发布
 - `supabase-setup.sql`
   在 Supabase 里执行的数据库初始化脚本
 - `latest.json`
@@ -84,6 +86,25 @@ window.SUPABASE_CONFIG = {
   anonKey: "你的 anon public key",
 };
 ```
+
+### 更简单的方法
+
+直接双击：
+
+```text
+configure_supabase.bat
+```
+
+然后按提示输入：
+
+- Supabase Project URL
+- Supabase anon/public key
+
+脚本会自动：
+
+1. 写入 `supabase-config.js`
+2. 上传到 GitHub
+3. 触发 GitHub Pages 自动更新
 
 ## 第 4 步：把配置同步到 GitHub
 
