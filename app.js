@@ -418,7 +418,7 @@ async function handleCameraDecoded(decodedText) {
       if (!scannerState.resultResetTimer) {
         setScanHint("可以继续扫描下一件。请对准条形码，不是识别数字。");
       }
-    }, 1200);
+    }, 650);
   }
 }
 
@@ -433,9 +433,9 @@ async function startCameraScanner() {
   try {
     const scanner = await getScannerInstance();
     const config = {
-      fps: 12,
-      qrbox: { width: 300, height: 130 },
-      aspectRatio: 1.777,
+      fps: 18,
+      qrbox: { width: 280, height: 100 },
+      aspectRatio: 1.6,
       rememberLastUsedCamera: true,
       disableFlip: true,
     };
@@ -638,6 +638,31 @@ function bindEvents() {
     startCameraScanner();
   });
   q("scanImageInput").addEventListener("change", handleScanImageFile);
+  q("manualEntryBtn").addEventListener("click", () => {
+    const value = q("manualEntryInput").value.trim();
+    if (!value) {
+      setStatus("entryStatus", "请先输入单号", "warning");
+      setScanResult("请先输入单号", "warning");
+      setScanHint("手动输入单号后，再点“手动录入”。");
+      return;
+    }
+    q("manualEntryInput").value = "";
+    handleEntryAdd(value);
+  });
+  q("manualEntryInput").addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      const value = q("manualEntryInput").value.trim();
+      if (!value) {
+        setStatus("entryStatus", "请先输入单号", "warning");
+        setScanResult("请先输入单号", "warning");
+        setScanHint("手动输入单号后，再点“手动录入”。");
+        return;
+      }
+      q("manualEntryInput").value = "";
+      handleEntryAdd(value);
+    }
+  });
   q("adminLogoutBtn").addEventListener("click", async () => {
     await stopCameraScanner(true);
     sessionStorage.removeItem(ADMIN_PASSWORD_KEY);
