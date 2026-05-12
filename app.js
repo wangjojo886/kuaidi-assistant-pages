@@ -193,6 +193,16 @@ function renderRecentEntries() {
     .join("");
 }
 
+function setRecentCollapsed(collapsed) {
+  q("recentEntriesWrap").classList.toggle("recent-collapsed", collapsed);
+  q("recentToggleBtn").textContent = collapsed ? "展开" : "收起";
+}
+
+function toggleRecentEntries() {
+  const collapsed = q("recentEntriesWrap").classList.contains("recent-collapsed");
+  setRecentCollapsed(!collapsed);
+}
+
 function populateLocationOptions() {
   const select = q("entryLocation");
   if (!state.locations.length) {
@@ -672,6 +682,11 @@ function bindEvents() {
     scannerState.autoStartAttempted = false;
     await showView("homeView");
   });
+  q("recentToggle").addEventListener("click", toggleRecentEntries);
+  q("recentToggleBtn").addEventListener("click", (event) => {
+    event.stopPropagation();
+    toggleRecentEntries();
+  });
 
   document.querySelectorAll("[data-go-home]").forEach((el) => {
     el.addEventListener("click", async () => {
@@ -691,6 +706,7 @@ async function init() {
   renderEmpty("输入单号或日期后查询");
   setScanResult("等待扫描", "");
   setScanHint("进入值班录入后会默认自动打开摄像头。");
+  setRecentCollapsed(true);
 
   if (localStorage.getItem(ACCESS_GATE_KEY) === ACCESS_HASH) {
     setAppReady();
