@@ -550,15 +550,21 @@ async function handleEntryAdd(trackingNumber) {
   if (error) {
     console.error(error);
     const reason = getErrorReason(error);
+    if (reason.includes("已存在")) {
+      setStatus("entryStatus", `录入失败：${reason}`, "warning");
+      setScanResult("已存在", "warning");
+      setScanHint(reason);
+      return;
+    }
     setStatus("entryStatus", `录入失败：${reason}`, "error");
     setScanResult("录入失败", "error");
     setScanHint(reason);
     return;
   }
 
-  const message = data?.message || "录入成功";
-  setStatus("entryStatus", message, "success");
-  setScanResult("录入成功", "success");
+  const successMessage = "录入成功，感谢你的付出 🌸";
+  setStatus("entryStatus", successMessage, "success");
+  setScanResult(successMessage, "success");
   setScanHint(`${normalizedTracking} 已保存。继续扫下一件即可。`);
   await reloadData();
 }
