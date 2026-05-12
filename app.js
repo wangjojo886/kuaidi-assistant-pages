@@ -32,6 +32,7 @@ const scannerState = {
   locked: false,
   lastDecoded: "",
   lastDecodedAt: 0,
+  autoStartAttempted: false,
 };
 
 function q(id) {
@@ -49,6 +50,16 @@ function setStatus(id, message, type = "") {
   if (!el) return;
   el.textContent = message;
   el.className = `status ${type}`.trim();
+}
+
+function setScanResult(message, type = "") {
+  const textEl = q("scanResultText");
+  textEl.textContent = message;
+  textEl.className = `scan-result-text ${type}`.trim();
+}
+
+function setScanHint(message) {
+  q("scanResultHint").textContent = message;
 }
 
 function getErrorReason(err, fallback = "未知错误") {
@@ -276,21 +287,20 @@ async function openAdminFlow() {
   }
 
   sessionStorage.setItem(ADMIN_PASSWORD_KEY, DEFAULT_DUTY_PASSWORD);
-  openAdminEntryView();
+  await openAdminEntryView();
 }
 
 async function openAdminEntryView() {
   await showView("adminEntryView");
-  setStatus("entryStatus", "方便兄弟，感谢有你。可手输，也可直接开启摄像头扫码。", "success");
+  setStatus("entryStatus", "正在准备摄像头扫码...", "success");
+  setScanResult("等待扫描", "");
+  setScanHint("请直接对准条形码，识别成功后会自动录入，不会跳回顶部。");
   renderRecentEntries();
-  syncScannerButtons();
-  focusEntryInput();
-}
 
-function focusEntryInput() {
-  const input = q("entryInput");
-  input.focus();
-  input.select();
+  if (!scannerState.running && !scannerState.autoStartAttempted) {
+    scannerState.autoStartAttempted = true;
+    startCameraScanner();
+  }
 }
 
 async function sha256(text) {
@@ -329,13 +339,6 @@ function ensureScannerLibrary() {
   }
 }
 
-function syncScannerButtons() {
-  const running = scannerState.running;
-  q("startScanBtn").disabled = running;
-  q("stopScanBtn").disabled = !running;
-  q("scannerPanel").classList.toggle("scanner-hidden", !running);
-}
-
 function shouldIgnoreDecodedText(text) {
   const normalized = String(text || "").trim();
   if (!normalized) return true;
@@ -362,7 +365,6 @@ async function getScannerInstance() {
         Html5QrcodeSupportedFormats.UPC_A,
         Html5QrcodeSupportedFormats.UPC_E,
         Html5QrcodeSupportedFormats.ITF,
-        Html5QrcodeSupportedFormats.QR_CODE,
       ],
       verbose: false,
     });
@@ -375,15 +377,15 @@ async function handleCameraDecoded(decodedText) {
 
   scannerState.locked = true;
   const value = String(decodedText || "").trim();
-  q("entryInput").value = value;
-  setStatus("entryStatus", `已识别：${value}，正在录入...`, "success");
+  setScanResult(`识别成功：${value}`, "success");
+  setScanHint("正在自动录入，请保持页面停在这里，下一件继续扫。");
 
   try {
-    await handleEntryAdd({ fromScanner: true });
+    await handleEntryAdd(value);
   } finally {
     setTimeout(() => {
       scannerState.locked = false;
-      focusEntryInput();
+      setScanHint("可以继续扫描下一件。请对准条形码，不是识别数字。");
     }, 1200);
   }
 }
@@ -397,49 +399,47 @@ async function startCameraScanner() {
   if (scannerState.running) return;
 
   try {
-    q("scannerPanel").classList.remove("scanner-hidden");
     const scanner = await getScannerInstance();
     const config = {
-      fps: 10,
-      qrbox: { width: 280, height: 140 },
+      fps: 12,
+      qrbox: { width: 300, height: 130 },
       aspectRatio: 1.777,
       rememberLastUsedCamera: true,
+      disableFlip: true,
     };
 
     setStatus("entryStatus", "正在打开摄像头...", "success");
 
-    try {
+    await scanner.start(
+      { facingMode: { exact: "environment" } },
+      config,
+      handleCameraDecoded,
+      () => {},
+    ).catch(async () => {
       await scanner.start(
         { facingMode: "environment" },
         config,
         handleCameraDecoded,
         () => {},
       );
-    } catch (primaryError) {
-      await scanner.start(
-        { facingMode: "user" },
-        config,
-        handleCameraDecoded,
-        () => {},
-      );
-    }
+    });
 
     scannerState.running = true;
-    syncScannerButtons();
-    setStatus("entryStatus", "摄像头已开启，对准快递条码即可自动录入。", "success");
+    setStatus("entryStatus", "摄像头已开启，请扫描条形码。", "success");
+    setScanResult("摄像头已开启", "");
+    setScanHint("请直接对准快递面单上的条形码。");
   } catch (err) {
     console.error(err);
     scannerState.running = false;
-    syncScannerButtons();
-    q("scannerPanel").classList.add("scanner-hidden");
     setStatus("entryStatus", `无法打开摄像头：${getErrorReason(err)}`, "error");
+    setScanResult("摄像头打开失败", "error");
+    setScanHint("请改用“拍照扫条形码”，或检查浏览器摄像头权限。");
   }
 }
 
 async function stopCameraScanner(silent = false) {
   if (!scannerState.instance || !scannerState.running) {
     scannerState.running = false;
-    syncScannerButtons();
     return;
   }
 
@@ -452,9 +452,10 @@ async function stopCameraScanner(silent = false) {
     scannerState.instance = null;
     scannerState.running = false;
     scannerState.locked = false;
-    syncScannerButtons();
     if (!silent) {
       setStatus("entryStatus", "摄像头扫码已停止。", "warning");
+      setScanResult("摄像头已停止", "warning");
+      setScanHint("如需继续扫描，请点“重新打开摄像头”。");
     }
   }
 }
@@ -471,7 +472,9 @@ async function handleScanImageFile(event) {
 
   try {
     ensureScannerLibrary();
-    setStatus("entryStatus", "正在识别图片中的条码...", "success");
+    setStatus("entryStatus", "正在识别图片中的条形码...", "success");
+    setScanResult("正在识别图片", "");
+    setScanHint("请稍等，识别后会自动录入。");
 
     if (!scannerState.instance) {
       scannerState.instance = new Html5Qrcode("scannerViewport", {
@@ -484,7 +487,6 @@ async function handleScanImageFile(event) {
           Html5QrcodeSupportedFormats.UPC_A,
           Html5QrcodeSupportedFormats.UPC_E,
           Html5QrcodeSupportedFormats.ITF,
-          Html5QrcodeSupportedFormats.QR_CODE,
         ],
         verbose: false,
       });
@@ -492,21 +494,23 @@ async function handleScanImageFile(event) {
 
     const decodedText = await scannerState.instance.scanFile(file, true);
     if (!decodedText) {
-      throw new Error("没有识别到条码，请换清晰一点的照片再试");
+      throw new Error("没有识别到条形码，请换清晰一点的照片再试");
     }
 
-    q("entryInput").value = String(decodedText).trim();
-    setStatus("entryStatus", `已识别：${decodedText}，正在录入...`, "success");
-    await handleEntryAdd({ fromScanner: true });
+    setScanResult(`识别成功：${decodedText}`, "success");
+    setScanHint("正在自动录入，请稍等。");
+    await handleEntryAdd(String(decodedText).trim());
   } catch (err) {
     console.error(err);
     setStatus("entryStatus", `图片扫码失败：${getErrorReason(err, "未识别到条码")}`, "error");
+    setScanResult("图片扫码失败", "error");
+    setScanHint("请拍清晰一点的条形码，或改用实时摄像头扫码。");
   } finally {
     event.target.value = "";
   }
 }
 
-async function handleEntryAdd(options = {}) {
+async function handleEntryAdd(trackingNumber) {
   if (!hasSupabase) {
     setStatus("entryStatus", "未配置 Supabase，不能录入。", "warning");
     return;
@@ -514,7 +518,7 @@ async function handleEntryAdd(options = {}) {
 
   const password = sessionStorage.getItem(ADMIN_PASSWORD_KEY);
   const location = q("entryLocation").value;
-  const trackingNumber = q("entryInput").value.trim();
+  const normalizedTracking = String(trackingNumber || "").trim();
 
   if (!password) {
     setStatus("entryStatus", "录入会话已失效，请重新进入值班录入。", "error");
@@ -522,39 +526,41 @@ async function handleEntryAdd(options = {}) {
     return;
   }
 
-  if (!trackingNumber) {
-    setStatus("entryStatus", "请先扫描或输入快递单号", "error");
-    focusEntryInput();
+  if (!normalizedTracking) {
+    setStatus("entryStatus", "没有识别到条形码内容", "error");
+    setScanResult("未识别到条形码", "error");
+    setScanHint("请重新对准条形码扫描。");
     return;
   }
 
   if (!location) {
     setStatus("entryStatus", "请先选择位置", "error");
+    setScanResult("请先选择位置", "warning");
     return;
   }
 
   setStatus("entryStatus", "正在提交...", "success");
   const { data, error } = await sb.rpc("insert_package_with_password", {
     p_password: password,
-    p_tracking_number: trackingNumber,
+    p_tracking_number: normalizedTracking,
     p_location: location,
     p_package_date: new Date().toISOString().slice(0, 10),
   });
 
   if (error) {
     console.error(error);
-    setStatus("entryStatus", `录入失败：${getErrorReason(error)}`, "error");
-    focusEntryInput();
+    const reason = getErrorReason(error);
+    setStatus("entryStatus", `录入失败：${reason}`, "error");
+    setScanResult("录入失败", "error");
+    setScanHint(reason);
     return;
   }
 
   const message = data?.message || "录入成功";
-  q("entryInput").value = "";
   setStatus("entryStatus", message, "success");
+  setScanResult("录入成功", "success");
+  setScanHint(`${normalizedTracking} 已保存。继续扫下一件即可。`);
   await reloadData();
-  if (!options.fromScanner) {
-    focusEntryInput();
-  }
 }
 
 async function handleLogout() {
@@ -583,21 +589,17 @@ function bindEvents() {
   });
   q("dateInput").addEventListener("change", runQuery);
 
-  q("entryAddBtn").addEventListener("click", () => handleEntryAdd());
-  q("entryInput").addEventListener("keydown", (event) => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      handleEntryAdd();
-    }
+  q("restartScanBtn").addEventListener("click", async () => {
+    await stopCameraScanner(true);
+    scannerState.autoStartAttempted = false;
+    startCameraScanner();
   });
-  q("focusInputBtn").addEventListener("click", focusEntryInput);
-  q("startScanBtn").addEventListener("click", startCameraScanner);
-  q("stopScanBtn").addEventListener("click", () => stopCameraScanner());
   q("scanImageInput").addEventListener("change", handleScanImageFile);
   q("adminLogoutBtn").addEventListener("click", async () => {
     await stopCameraScanner(true);
     sessionStorage.removeItem(ADMIN_PASSWORD_KEY);
     sessionStorage.setItem(ADMIN_PASSWORD_KEY, DEFAULT_DUTY_PASSWORD);
+    scannerState.autoStartAttempted = false;
     await showView("homeView");
   });
 
@@ -617,7 +619,8 @@ function escapeHtml(text) {
 async function init() {
   bindEvents();
   renderEmpty("输入单号或日期后查询");
-  syncScannerButtons();
+  setScanResult("等待扫描", "");
+  setScanHint("进入值班录入后会默认自动打开摄像头。");
 
   if (localStorage.getItem(ACCESS_GATE_KEY) === ACCESS_HASH) {
     setAppReady();
