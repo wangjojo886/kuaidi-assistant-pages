@@ -22,6 +22,7 @@ const state = {
   packages: [],
   recentPackages: [],
   locations: [],
+  selectedLocation: "",
   latestUpdatedAt: "",
   sourceExportTime: "",
 };
@@ -176,12 +177,22 @@ function populateLocationOptions() {
   const select = q("entryLocation");
   if (!state.locations.length) {
     select.innerHTML = '<option value="">暂无位置</option>';
+    state.selectedLocation = "";
     return;
   }
 
+  const currentValue = select.value || state.selectedLocation;
+  const nextValue = state.locations.includes(currentValue) ? currentValue : state.locations[0];
+
   select.innerHTML = state.locations
-    .map((location) => `<option value="${escapeHtml(location)}">${escapeHtml(location)}</option>`)
+    .map((location) => {
+      const selected = location === nextValue ? " selected" : "";
+      return `<option value="${escapeHtml(location)}"${selected}>${escapeHtml(location)}</option>`;
+    })
     .join("");
+
+  select.value = nextValue;
+  state.selectedLocation = nextValue;
 }
 
 async function loadStaticJson() {
@@ -594,6 +605,9 @@ function bindEvents() {
     if (event.key === "Enter") runQuery();
   });
   q("dateInput").addEventListener("change", runQuery);
+  q("entryLocation").addEventListener("change", (event) => {
+    state.selectedLocation = event.target.value;
+  });
 
   q("restartScanBtn").addEventListener("click", async () => {
     await stopCameraScanner(true);
