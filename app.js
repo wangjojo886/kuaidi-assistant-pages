@@ -26,6 +26,14 @@ const state = {
   sourceExportTime: "",
 };
 
+const scannerState = {
+  instance: null,
+  running: false,
+  locked: false,
+  lastDecoded: "",
+  lastDecodedAt: 0,
+};
+
 function q(id) {
   return document.getElementById(id);
 }
@@ -38,6 +46,7 @@ function setModeBanner(text, type = "") {
 
 function setStatus(id, message, type = "") {
   const el = q(id);
+  if (!el) return;
   el.textContent = message;
   el.className = `status ${type}`.trim();
 }
@@ -55,7 +64,11 @@ function setAppReady() {
   sessionStorage.setItem(ADMIN_PASSWORD_KEY, DEFAULT_DUTY_PASSWORD);
 }
 
-function showView(viewId) {
+async function showView(viewId) {
+  if (viewId !== "adminEntryView") {
+    await stopCameraScanner(true);
+  }
+
   document.querySelectorAll(".view").forEach((el) => el.classList.add("view-hidden"));
   q(viewId).classList.remove("view-hidden");
 }
@@ -112,17 +125,17 @@ function renderQueryResults(items) {
           <span class="label">单号</span>
           <div class="value tags">
             ${(item.trackingNumbers || [item.trackingNumber])
-              .map((tn) => `<span class="tag">${tn}</span>`)
+              .map((tn) => `<span class="tag">${escapeHtml(tn)}</span>`)
               .join("")}
           </div>
         </div>
         <div class="row">
           <span class="label">日期</span>
-          <span class="value">${item.date || "-"}</span>
+          <span class="value">${escapeHtml(item.date || "-")}</span>
         </div>
         <div class="row">
           <span class="label">位置</span>
-          <span class="value">${item.location || "-"}</span>
+          <span class="value">${escapeHtml(item.location || "-")}</span>
         </div>
       </article>
     `,
@@ -140,8 +153,8 @@ function renderRecentEntries() {
     .map(
       (item) => `
       <div class="recent-item">
-        <div class="recent-main">${item.trackingNumber}</div>
-        <div class="recent-sub">${item.location} · ${item.date}</div>
+        <div class="recent-main">${escapeHtml(item.trackingNumber)}</div>
+        <div class="recent-sub">${escapeHtml(item.location)} · ${escapeHtml(item.date)}</div>
       </div>
     `,
     )
@@ -244,16 +257,20 @@ function runQuery() {
   renderQueryResults(result);
 }
 
-function openQueryView() {
-  showView("queryView");
+async function openQueryView() {
+  await showView("queryView");
   renderEmpty("输入单号或日期后查询");
-  setStatus("queryStatus", hasSupabase ? "已连接实时云端数据" : "当前读取 latest.json 静态数据", "success");
+  setStatus(
+    "queryStatus",
+    hasSupabase ? "已连接实时云端数据" : "当前读取 latest.json 静态数据",
+    "success",
+  );
   q("trackingInput").focus();
 }
 
-function openAdminFlow() {
+async function openAdminFlow() {
   if (!hasSupabase) {
-    showView("homeView");
+    await showView("homeView");
     setModeBanner("当前还没有接入 Supabase，暂时只能查询。先按 README 完成云端配置。", "warning");
     return;
   }
@@ -262,10 +279,11 @@ function openAdminFlow() {
   openAdminEntryView();
 }
 
-function openAdminEntryView() {
-  showView("adminEntryView");
-  setStatus("entryStatus", "扫码枪接入后，保持光标在输入框中即可连续录入。", "success");
+async function openAdminEntryView() {
+  await showView("adminEntryView");
+  setStatus("entryStatus", "方便兄弟，感谢有你。可手输，也可直接开启摄像头扫码。", "success");
   renderRecentEntries();
+  syncScannerButtons();
   focusEntryInput();
 }
 
@@ -299,13 +317,147 @@ async function handleGateLogin() {
   }
 
   localStorage.setItem(ACCESS_GATE_KEY, ACCESS_HASH);
-  sessionStorage.setItem(ADMIN_PASSWORD_KEY, password);
+  sessionStorage.setItem(ADMIN_PASSWORD_KEY, DEFAULT_DUTY_PASSWORD);
   setAppReady();
   await reloadData();
-  showView("homeView");
+  await showView("homeView");
 }
 
-async function handleEntryAdd() {
+function ensureScannerLibrary() {
+  if (!window.Html5Qrcode || !window.Html5QrcodeSupportedFormats) {
+    throw new Error("扫码组件加载失败，请刷新页面后重试");
+  }
+}
+
+function syncScannerButtons() {
+  const running = scannerState.running;
+  q("startScanBtn").disabled = running;
+  q("stopScanBtn").disabled = !running;
+  q("scannerPanel").classList.toggle("scanner-hidden", !running);
+}
+
+function shouldIgnoreDecodedText(text) {
+  const normalized = String(text || "").trim();
+  if (!normalized) return true;
+  const now = Date.now();
+  if (scannerState.locked) return true;
+  if (scannerState.lastDecoded === normalized && now - scannerState.lastDecodedAt < 5000) {
+    return true;
+  }
+  scannerState.lastDecoded = normalized;
+  scannerState.lastDecodedAt = now;
+  return false;
+}
+
+async function getScannerInstance() {
+  ensureScannerLibrary();
+  if (!scannerState.instance) {
+    scannerState.instance = new Html5Qrcode("scannerViewport", {
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.CODE_93,
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.ITF,
+        Html5QrcodeSupportedFormats.QR_CODE,
+      ],
+      verbose: false,
+    });
+  }
+  return scannerState.instance;
+}
+
+async function handleCameraDecoded(decodedText) {
+  if (shouldIgnoreDecodedText(decodedText)) return;
+
+  scannerState.locked = true;
+  const value = String(decodedText || "").trim();
+  q("entryInput").value = value;
+  setStatus("entryStatus", `已识别：${value}，正在录入...`, "success");
+
+  try {
+    await handleEntryAdd({ fromScanner: true });
+  } finally {
+    setTimeout(() => {
+      scannerState.locked = false;
+      focusEntryInput();
+    }, 1200);
+  }
+}
+
+async function startCameraScanner() {
+  if (!hasSupabase) {
+    setStatus("entryStatus", "未配置 Supabase，不能使用扫码录入。", "warning");
+    return;
+  }
+
+  if (scannerState.running) return;
+
+  try {
+    const scanner = await getScannerInstance();
+    const config = {
+      fps: 10,
+      qrbox: { width: 280, height: 140 },
+      aspectRatio: 1.777,
+      rememberLastUsedCamera: true,
+    };
+
+    setStatus("entryStatus", "正在打开摄像头...", "success");
+
+    try {
+      await scanner.start(
+        { facingMode: "environment" },
+        config,
+        handleCameraDecoded,
+        () => {},
+      );
+    } catch (primaryError) {
+      await scanner.start(
+        { facingMode: "user" },
+        config,
+        handleCameraDecoded,
+        () => {},
+      );
+    }
+
+    scannerState.running = true;
+    syncScannerButtons();
+    setStatus("entryStatus", "摄像头已开启，对准快递条码即可自动录入。", "success");
+  } catch (err) {
+    console.error(err);
+    scannerState.running = false;
+    syncScannerButtons();
+    setStatus("entryStatus", `无法打开摄像头：${getErrorReason(err)}`, "error");
+  }
+}
+
+async function stopCameraScanner(silent = false) {
+  if (!scannerState.instance || !scannerState.running) {
+    scannerState.running = false;
+    syncScannerButtons();
+    return;
+  }
+
+  try {
+    await scannerState.instance.stop();
+    await scannerState.instance.clear();
+  } catch (err) {
+    console.error(err);
+  } finally {
+    scannerState.instance = null;
+    scannerState.running = false;
+    scannerState.locked = false;
+    syncScannerButtons();
+    if (!silent) {
+      setStatus("entryStatus", "摄像头扫码已停止。", "warning");
+    }
+  }
+}
+
+async function handleEntryAdd(options = {}) {
   if (!hasSupabase) {
     setStatus("entryStatus", "未配置 Supabase，不能录入。", "warning");
     return;
@@ -317,7 +469,7 @@ async function handleEntryAdd() {
 
   if (!password) {
     setStatus("entryStatus", "录入会话已失效，请重新进入值班录入。", "error");
-    showView("homeView");
+    await showView("homeView");
     return;
   }
 
@@ -351,10 +503,13 @@ async function handleEntryAdd() {
   q("entryInput").value = "";
   setStatus("entryStatus", message, "success");
   await reloadData();
-  focusEntryInput();
+  if (!options.fromScanner) {
+    focusEntryInput();
+  }
 }
 
-function handleLogout() {
+async function handleLogout() {
+  await stopCameraScanner(true);
   localStorage.removeItem(ACCESS_GATE_KEY);
   sessionStorage.removeItem(ADMIN_PASSWORD_KEY);
   q("app").classList.add("app-hidden");
@@ -379,7 +534,7 @@ function bindEvents() {
   });
   q("dateInput").addEventListener("change", runQuery);
 
-  q("entryAddBtn").addEventListener("click", handleEntryAdd);
+  q("entryAddBtn").addEventListener("click", () => handleEntryAdd());
   q("entryInput").addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
       event.preventDefault();
@@ -387,13 +542,19 @@ function bindEvents() {
     }
   });
   q("focusInputBtn").addEventListener("click", focusEntryInput);
-  q("adminLogoutBtn").addEventListener("click", () => {
+  q("startScanBtn").addEventListener("click", startCameraScanner);
+  q("stopScanBtn").addEventListener("click", () => stopCameraScanner());
+  q("adminLogoutBtn").addEventListener("click", async () => {
+    await stopCameraScanner(true);
     sessionStorage.removeItem(ADMIN_PASSWORD_KEY);
-    showView("homeView");
+    sessionStorage.setItem(ADMIN_PASSWORD_KEY, DEFAULT_DUTY_PASSWORD);
+    await showView("homeView");
   });
 
   document.querySelectorAll("[data-go-home]").forEach((el) => {
-    el.addEventListener("click", () => showView("homeView"));
+    el.addEventListener("click", async () => {
+      await showView("homeView");
+    });
   });
 }
 
@@ -406,11 +567,12 @@ function escapeHtml(text) {
 async function init() {
   bindEvents();
   renderEmpty("输入单号或日期后查询");
+  syncScannerButtons();
 
   if (localStorage.getItem(ACCESS_GATE_KEY) === ACCESS_HASH) {
     setAppReady();
     await reloadData();
-    showView("homeView");
+    await showView("homeView");
     return;
   }
 
