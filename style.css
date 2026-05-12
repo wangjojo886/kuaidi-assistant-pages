@@ -165,6 +165,40 @@ select {
   margin-top: 14px;
 }
 
+.scan-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.scanner-panel {
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #f8fbff;
+  padding: 10px;
+}
+
+.scanner-hidden {
+  display: none;
+}
+
+.scanner-viewport {
+  width: 100%;
+  min-height: 220px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #111827;
+}
+
+.scanner-note {
+  margin: 10px 2px 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
 .status {
   min-height: 20px;
   margin: 10px 2px 0;
@@ -286,6 +320,10 @@ select {
   .section-head-actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
+  }
+
+  .scan-actions {
+    grid-template-columns: 1fr;
   }
 
   .btn-secondary,
