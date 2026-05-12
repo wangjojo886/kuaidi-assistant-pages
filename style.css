@@ -95,10 +95,15 @@ h2 {
 }
 
 .entry-greeting {
-  margin: 10px 0 4px;
+  margin: 10px 0 6px;
   color: var(--success);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
+  text-align: center;
+  background: #eefbf7;
+  border: 1px solid #cceee2;
+  border-radius: 12px;
+  padding: 10px 12px;
 }
 
 .field-label {
