@@ -170,10 +170,17 @@ select {
 
 .scanner-viewport {
   width: 100%;
-  min-height: 260px;
+  min-height: 150px;
+  max-height: 160px;
   border-radius: 12px;
   overflow: hidden;
   background: #111827;
+}
+
+.scanner-viewport video {
+  width: 100% !important;
+  height: 160px !important;
+  object-fit: cover !important;
 }
 
 .scanner-note {
@@ -188,6 +195,21 @@ select {
   grid-template-columns: 1fr 1fr;
   gap: 10px;
   margin-top: 12px;
+}
+
+.manual-entry {
+  margin-top: 12px;
+}
+
+.manual-entry-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+}
+
+.manual-entry-row .btn {
+  width: auto;
+  min-width: 110px;
 }
 
 .scan-upload-btn {
@@ -360,6 +382,10 @@ select {
   }
 
   .scan-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .manual-entry-row {
     grid-template-columns: 1fr;
   }
 
