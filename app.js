@@ -174,12 +174,14 @@ function renderQueryResults(items) {
 }
 
 function renderRecentEntries() {
-  if (!state.recentPackages.length) {
+  const recentItems = state.recentPackages.slice(0, 4);
+
+  if (!recentItems.length) {
     q("recentEntries").innerHTML = '<div class="empty">暂无记录</div>';
     return;
   }
 
-  q("recentEntries").innerHTML = state.recentPackages
+  q("recentEntries").innerHTML = recentItems
     .map(
       (item) => `
       <div class="recent-item">
