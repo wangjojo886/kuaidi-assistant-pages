@@ -397,6 +397,7 @@ async function startCameraScanner() {
   if (scannerState.running) return;
 
   try {
+    q("scannerPanel").classList.remove("scanner-hidden");
     const scanner = await getScannerInstance();
     const config = {
       fps: 10,
@@ -430,6 +431,7 @@ async function startCameraScanner() {
     console.error(err);
     scannerState.running = false;
     syncScannerButtons();
+    q("scannerPanel").classList.add("scanner-hidden");
     setStatus("entryStatus", `无法打开摄像头：${getErrorReason(err)}`, "error");
   }
 }
@@ -454,6 +456,53 @@ async function stopCameraScanner(silent = false) {
     if (!silent) {
       setStatus("entryStatus", "摄像头扫码已停止。", "warning");
     }
+  }
+}
+
+async function handleScanImageFile(event) {
+  if (!hasSupabase) {
+    setStatus("entryStatus", "未配置 Supabase，不能使用图片扫码。", "warning");
+    event.target.value = "";
+    return;
+  }
+
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  try {
+    ensureScannerLibrary();
+    setStatus("entryStatus", "正在识别图片中的条码...", "success");
+
+    if (!scannerState.instance) {
+      scannerState.instance = new Html5Qrcode("scannerViewport", {
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.CODE_93,
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.ITF,
+          Html5QrcodeSupportedFormats.QR_CODE,
+        ],
+        verbose: false,
+      });
+    }
+
+    const decodedText = await scannerState.instance.scanFile(file, true);
+    if (!decodedText) {
+      throw new Error("没有识别到条码，请换清晰一点的照片再试");
+    }
+
+    q("entryInput").value = String(decodedText).trim();
+    setStatus("entryStatus", `已识别：${decodedText}，正在录入...`, "success");
+    await handleEntryAdd({ fromScanner: true });
+  } catch (err) {
+    console.error(err);
+    setStatus("entryStatus", `图片扫码失败：${getErrorReason(err, "未识别到条码")}`, "error");
+  } finally {
+    event.target.value = "";
   }
 }
 
@@ -544,6 +593,7 @@ function bindEvents() {
   q("focusInputBtn").addEventListener("click", focusEntryInput);
   q("startScanBtn").addEventListener("click", startCameraScanner);
   q("stopScanBtn").addEventListener("click", () => stopCameraScanner());
+  q("scanImageInput").addEventListener("change", handleScanImageFile);
   q("adminLogoutBtn").addEventListener("click", async () => {
     await stopCameraScanner(true);
     sessionStorage.removeItem(ADMIN_PASSWORD_KEY);
