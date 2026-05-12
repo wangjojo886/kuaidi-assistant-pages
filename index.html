@@ -78,6 +78,15 @@
         <label class="field-label" for="entryInput">扫码/输入单号</label>
         <input id="entryInput" type="text" autocomplete="off" placeholder="扫码枪扫完后会自动输入到这里">
 
+        <div class="scan-actions">
+          <button id="startScanBtn" type="button" class="btn btn-secondary">开始扫码</button>
+          <button id="stopScanBtn" type="button" class="btn btn-secondary">停止扫码</button>
+        </div>
+        <div id="scannerPanel" class="scanner-panel scanner-hidden">
+          <div id="scannerViewport" class="scanner-viewport"></div>
+          <p class="scanner-note">请把快递单号条码放在取景框中央，识别后会自动录入。</p>
+        </div>
+
         <button id="entryAddBtn" type="button" class="btn btn-primary">添加</button>
         <p id="entryStatus" class="status"></p>
       </div>
@@ -92,6 +101,7 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/html5-qrcode" defer></script>
   <script src="./supabase-config.js"></script>
   <script src="./app.js"></script>
 </body>
