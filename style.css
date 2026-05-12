@@ -172,6 +172,17 @@ select {
   margin-top: 12px;
 }
 
+.scan-upload-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.scan-image-input {
+  display: none;
+}
+
 .scanner-panel {
   margin-top: 12px;
   border: 1px solid var(--border);
