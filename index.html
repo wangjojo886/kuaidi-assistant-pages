@@ -74,13 +74,21 @@
 
         <div id="scannerPanel" class="scanner-panel">
           <div id="scannerViewport" class="scanner-viewport"></div>
-          <p class="scanner-note">请直接扫描快递面单上的条形码。当前是条形码识别，不是拍照识别数字。</p>
+          <p class="scanner-note">请把快递面单上的主条形码对准中间扫描框。当前优先识别条形码，不是直接识别数字。</p>
         </div>
 
         <div class="scan-actions">
           <label for="scanImageInput" class="btn btn-secondary scan-upload-btn">拍照扫条形码</label>
           <input id="scanImageInput" type="file" accept="image/*" capture="environment" class="scan-image-input">
           <button id="restartScanBtn" type="button" class="btn btn-secondary">重新打开摄像头</button>
+        </div>
+
+        <div class="manual-entry">
+          <label class="field-label" for="manualEntryInput">手动输入单号（备用）</label>
+          <div class="manual-entry-row">
+            <input id="manualEntryInput" type="text" autocomplete="off" placeholder="扫码不方便时可手动输入单号">
+            <button id="manualEntryBtn" type="button" class="btn btn-secondary">手动录入</button>
+          </div>
         </div>
 
         <div id="scanResultCard" class="scan-result-card">
