@@ -83,8 +83,11 @@
           <button id="restartScanBtn" type="button" class="btn btn-secondary">重新打开摄像头</button>
         </div>
 
-        <div class="manual-entry">
-          <label class="field-label" for="manualEntryInput">手动输入单号（备用）</label>
+        <div class="section-head collapse-head" id="manualToggle">
+          <span class="field-label inline-label">手动输入单号（备用）</span>
+          <button id="manualToggleBtn" type="button" class="btn btn-secondary btn-small">展开</button>
+        </div>
+        <div id="manualEntryWrap" class="manual-entry manual-collapsed">
           <div class="manual-entry-row">
             <input id="manualEntryInput" type="text" autocomplete="off" placeholder="扫码不方便时可手动输入单号">
             <button id="manualEntryBtn" type="button" class="btn btn-secondary">手动录入</button>
