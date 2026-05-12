@@ -94,6 +94,13 @@ h2 {
   margin-top: 8px;
 }
 
+.entry-greeting {
+  margin: 10px 0 4px;
+  color: var(--success);
+  font-size: 15px;
+  font-weight: 700;
+}
+
 .field-label {
   display: block;
   font-size: 13px;
