@@ -21,49 +21,84 @@ body {
   color: var(--text);
 }
 
+.gate,
 .app {
   max-width: 760px;
   margin: 0 auto;
   padding: 12px;
 }
 
-.header {
+.app-hidden {
+  display: none;
+}
+
+.gate {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gate-card,
+.header,
+.search-panel,
+.empty,
+.card {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 14px;
-  margin-bottom: 10px;
 }
 
+.gate-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 18px;
+}
+
+.gate-card h1,
 .header h1 {
   margin: 0 0 6px;
-  font-size: 24px;
   color: var(--primary);
 }
 
+.gate-card h1 {
+  font-size: 28px;
+}
+
+.gate-note,
 .updated-at {
   margin: 0;
   font-size: 13px;
   color: var(--muted);
 }
 
-.search-panel {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px;
+.header {
+  padding: 14px;
   margin-bottom: 10px;
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.header h1 {
+  font-size: 24px;
 }
 
 .field-label {
   display: block;
   font-size: 13px;
   color: var(--muted);
-  margin-bottom: 6px;
+  margin: 10px 0 6px;
 }
 
 input[type="text"],
-input[type="date"] {
+input[type="date"],
+input[type="password"] {
   width: 100%;
   height: 46px;
   border: 1px solid var(--border);
@@ -72,23 +107,44 @@ input[type="date"] {
   font-size: 16px;
   background: #fff;
   color: var(--text);
-  margin-bottom: 10px;
 }
 
-.btn-primary {
-  width: 100%;
+.btn-primary,
+.btn-secondary {
   height: 46px;
   border: none;
   border-radius: 10px;
-  background: var(--primary);
-  color: #fff;
   font-size: 17px;
   font-weight: 700;
 }
 
-.btn-primary:active,
-.btn-primary:hover {
+.btn-primary {
+  width: 100%;
+  background: var(--primary);
+  color: #fff;
+}
+
+.btn-primary:hover,
+.btn-primary:active {
   background: var(--primary-hover);
+}
+
+.btn-secondary {
+  min-width: 96px;
+  padding: 0 14px;
+  background: #eef2f7;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover,
+.btn-secondary:active {
+  background: #e5eaf1;
+}
+
+.search-panel {
+  padding: 12px;
+  margin-bottom: 10px;
 }
 
 .status {
@@ -111,9 +167,6 @@ input[type="date"] {
 }
 
 .empty {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
   text-align: center;
   color: var(--muted);
   padding: 26px 16px;
@@ -121,9 +174,6 @@ input[type="date"] {
 }
 
 .card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
   padding: 12px;
 }
 
@@ -164,4 +214,24 @@ input[type="date"] {
   border-radius: 8px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 12px;
+}
+
+@media (max-width: 520px) {
+  .gate,
+  .app {
+    padding: 10px;
+  }
+
+  .gate-card {
+    padding: 14px;
+  }
+
+  .header-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-secondary {
+    width: 100%;
+  }
 }
