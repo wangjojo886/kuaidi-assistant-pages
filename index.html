@@ -99,10 +99,13 @@
       </div>
 
       <div class="panel">
-        <div class="section-head">
-          <h2>最近录入</h2>
+        <div class="section-head recent-head" id="recentToggle">
+          <h2>最近录入（4条）</h2>
+          <button id="recentToggleBtn" type="button" class="btn btn-secondary btn-small">展开</button>
         </div>
-        <div id="recentEntries" class="recent-list"></div>
+        <div id="recentEntriesWrap" class="recent-wrap recent-collapsed">
+          <div id="recentEntries" class="recent-list"></div>
+        </div>
       </div>
     </section>
   </main>
