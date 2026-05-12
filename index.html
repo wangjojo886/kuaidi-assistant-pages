@@ -81,6 +81,8 @@
         <div class="scan-actions">
           <button id="startScanBtn" type="button" class="btn btn-secondary">开始扫码</button>
           <button id="stopScanBtn" type="button" class="btn btn-secondary">停止扫码</button>
+          <label for="scanImageInput" class="btn btn-secondary scan-upload-btn">拍照扫码</label>
+          <input id="scanImageInput" type="file" accept="image/*" capture="environment" class="scan-image-input">
         </div>
         <div id="scannerPanel" class="scanner-panel scanner-hidden">
           <div id="scannerViewport" class="scanner-viewport"></div>
