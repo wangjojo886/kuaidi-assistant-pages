@@ -61,20 +61,6 @@
       <section id="results" class="results"></section>
     </section>
 
-    <section id="adminLoginView" class="view view-hidden">
-      <div class="panel">
-        <div class="section-head">
-          <h2>值班录入登录</h2>
-          <button data-go-home type="button" class="btn btn-secondary btn-small">返回首页</button>
-        </div>
-
-        <label class="field-label" for="adminPassword">录入密码</label>
-        <input id="adminPassword" type="password" autocomplete="current-password" placeholder="请输入录入密码">
-        <button id="adminLoginBtn" type="button" class="btn btn-primary">进入录入</button>
-        <p id="adminLoginStatus" class="status"></p>
-      </div>
-    </section>
-
     <section id="adminEntryView" class="view view-hidden">
       <div class="panel">
         <div class="section-head">
@@ -84,6 +70,7 @@
             <button id="adminLogoutBtn" type="button" class="btn btn-secondary btn-small">退出录入</button>
           </div>
         </div>
+        <p class="entry-greeting">方便兄弟，感谢有你</p>
 
         <label class="field-label" for="entryLocation">选择位置</label>
         <select id="entryLocation"></select>
