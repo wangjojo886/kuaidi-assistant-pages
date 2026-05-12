@@ -5,24 +5,47 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+$repo = "wangjojo886/kuaidi-assistant-pages"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $scriptDir
 
 if (-not (Test-Path -LiteralPath $ExportJsonPath)) {
-  throw "导出文件不存在: $ExportJsonPath"
+  throw "Export file not found: $ExportJsonPath"
 }
 
+Write-Host "1/4 Generate latest.json ..."
 python .\update_latest_json.py --input $ExportJsonPath --output .\latest.json
 
-git add .\latest.json
-$diff = git diff --cached --name-only
-if (-not $diff) {
-  Write-Host "latest.json 无变化，不需要推送。"
-  exit 0
+Write-Host "2/4 Check GitHub auth ..."
+$null = gh auth status
+
+Write-Host "3/4 Upload latest.json to GitHub ..."
+$latestPath = Join-Path $scriptDir "latest.json"
+$latestContent = Get-Content -LiteralPath $latestPath -Raw -Encoding UTF8
+$latestB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($latestContent))
+
+$remoteSha = ""
+try {
+  $remoteSha = gh api repos/$repo/contents/latest.json --jq .sha
+} catch {
+  $remoteSha = ""
 }
 
-$msg = "Update latest.json " + (Get-Date -Format "yyyy-MM-dd HH:mm")
-git commit -m $msg
-git push
+$commitMessage = "Update latest.json " + (Get-Date -Format "yyyy-MM-dd HH:mm")
 
-Write-Host "已更新并推送 latest.json。Cloudflare Pages 会自动发布。"
+if ($remoteSha) {
+  gh api repos/$repo/contents/latest.json `
+    --method PUT `
+    --field message="$commitMessage" `
+    --field content="$latestB64" `
+    --field sha="$remoteSha" | Out-Null
+} else {
+  gh api repos/$repo/contents/latest.json `
+    --method PUT `
+    --field message="$commitMessage" `
+    --field content="$latestB64" | Out-Null
+}
+
+Write-Host "4/4 Done"
+Write-Host "Published: https://wangjojo886.github.io/kuaidi-assistant-pages/"
+Write-Host "Note: GitHub Pages usually updates within 1-2 minutes."
