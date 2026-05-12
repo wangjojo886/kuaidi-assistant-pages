@@ -282,6 +282,24 @@ select {
   gap: 10px;
 }
 
+.recent-head {
+  cursor: pointer;
+}
+
+.recent-wrap {
+  overflow: hidden;
+  transition: max-height 0.25s ease, opacity 0.25s ease, margin-top 0.25s ease;
+  max-height: 500px;
+  opacity: 1;
+  margin-top: 10px;
+}
+
+.recent-collapsed {
+  max-height: 0;
+  opacity: 0;
+  margin-top: 0;
+}
+
 .empty {
   background: var(--card);
   border: 1px solid var(--border);
