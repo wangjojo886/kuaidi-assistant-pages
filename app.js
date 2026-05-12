@@ -1,6 +1,7 @@
 const ACCESS_HASH = "c2d7340697d488a8de0c97f38f523c19765980398e5ae310cbc777d3cd76e7d4";
 const ACCESS_GATE_KEY = "kuaidi_access_granted_v2";
 const ADMIN_PASSWORD_KEY = "kuaidi_admin_password_v1";
+const DEFAULT_DUTY_PASSWORD = "xw2d";
 
 const supabaseConfig = window.SUPABASE_CONFIG || {};
 const hasSupabase =
@@ -51,6 +52,7 @@ function getErrorReason(err, fallback = "未知错误") {
 function setAppReady() {
   q("gate").style.display = "none";
   q("app").classList.remove("app-hidden");
+  sessionStorage.setItem(ADMIN_PASSWORD_KEY, DEFAULT_DUTY_PASSWORD);
 }
 
 function showView(viewId) {
@@ -251,20 +253,13 @@ function openQueryView() {
 
 function openAdminFlow() {
   if (!hasSupabase) {
-    showView("adminLoginView");
-    setStatus("adminLoginStatus", "当前站点还没有接入 Supabase，暂时只能查询。先按 README 完成云端配置。", "warning");
+    showView("homeView");
+    setModeBanner("当前还没有接入 Supabase，暂时只能查询。先按 README 完成云端配置。", "warning");
     return;
   }
 
-  const cachedPassword = sessionStorage.getItem(ADMIN_PASSWORD_KEY);
-  if (cachedPassword) {
-    openAdminEntryView();
-    return;
-  }
-
-  showView("adminLoginView");
-  setStatus("adminLoginStatus", "请输入值班录入密码后进入", "success");
-  q("adminPassword").focus();
+  sessionStorage.setItem(ADMIN_PASSWORD_KEY, DEFAULT_DUTY_PASSWORD);
+  openAdminEntryView();
 }
 
 function openAdminEntryView() {
@@ -310,33 +305,6 @@ async function handleGateLogin() {
   showView("homeView");
 }
 
-async function handleAdminLogin() {
-  const password = q("adminPassword").value.trim();
-  if (!password) {
-    setStatus("adminLoginStatus", "请输入录入密码", "error");
-    return;
-  }
-
-  setStatus("adminLoginStatus", "正在验证...", "success");
-  const { data, error } = await sb.rpc("admin_login", { p_password: password });
-  if (error) {
-    console.error(error);
-    setStatus("adminLoginStatus", `登录失败：${getErrorReason(error)}`, "error");
-    return;
-  }
-
-  if (!data) {
-    setStatus("adminLoginStatus", "录入密码错误", "error");
-    return;
-  }
-
-  sessionStorage.setItem(ADMIN_PASSWORD_KEY, password);
-  setStatus("adminLoginStatus", "登录成功", "success");
-  q("adminPassword").value = "";
-  await reloadData();
-  openAdminEntryView();
-}
-
 async function handleEntryAdd() {
   if (!hasSupabase) {
     setStatus("entryStatus", "未配置 Supabase，不能录入。", "warning");
@@ -349,7 +317,7 @@ async function handleEntryAdd() {
 
   if (!password) {
     setStatus("entryStatus", "录入会话已失效，请重新进入值班录入。", "error");
-    showView("adminLoginView");
+    showView("homeView");
     return;
   }
 
@@ -410,11 +378,6 @@ function bindEvents() {
     if (event.key === "Enter") runQuery();
   });
   q("dateInput").addEventListener("change", runQuery);
-
-  q("adminLoginBtn").addEventListener("click", handleAdminLogin);
-  q("adminPassword").addEventListener("keydown", (event) => {
-    if (event.key === "Enter") handleAdminLogin();
-  });
 
   q("entryAddBtn").addEventListener("click", handleEntryAdd);
   q("entryInput").addEventListener("keydown", (event) => {
