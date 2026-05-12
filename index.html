@@ -7,9 +7,23 @@
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-  <main class="app">
-    <header class="header">
+  <section id="gate" class="gate">
+    <div class="gate-card">
       <h1>快递查询</h1>
+      <p class="gate-note">请输入访问密码后查看最新数据</p>
+      <label class="field-label" for="gatePassword">访问密码</label>
+      <input id="gatePassword" type="password" autocomplete="current-password" placeholder="请输入访问密码">
+      <button id="gateBtn" type="button" class="btn-primary">进入查询</button>
+      <p id="gateStatus" class="status"></p>
+    </div>
+  </section>
+
+  <main id="app" class="app app-hidden">
+    <header class="header">
+      <div class="header-top">
+        <h1>快递查询</h1>
+        <button id="logoutBtn" type="button" class="btn-secondary">退出访问</button>
+      </div>
       <p id="updatedAt" class="updated-at">正在加载最新数据...</p>
     </header>
 
