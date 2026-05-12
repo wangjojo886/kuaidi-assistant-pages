@@ -34,6 +34,7 @@ const scannerState = {
   lastDecoded: "",
   lastDecodedAt: 0,
   autoStartAttempted: false,
+  resultResetTimer: null,
 };
 
 function q(id) {
@@ -61,6 +62,23 @@ function setScanResult(message, type = "") {
 
 function setScanHint(message) {
   q("scanResultHint").textContent = message;
+}
+
+function clearResultResetTimer() {
+  if (scannerState.resultResetTimer) {
+    clearTimeout(scannerState.resultResetTimer);
+    scannerState.resultResetTimer = null;
+  }
+}
+
+function scheduleReadyStateReset(delay = 1800) {
+  clearResultResetTimer();
+  scannerState.resultResetTimer = setTimeout(() => {
+    setStatus("entryStatus", "", "");
+    setScanResult("等待扫描", "");
+    setScanHint("请继续扫描下一件条形码。");
+    scannerState.resultResetTimer = null;
+  }, delay);
 }
 
 function getErrorReason(err, fallback = "未知错误") {
@@ -386,6 +404,7 @@ async function getScannerInstance() {
 async function handleCameraDecoded(decodedText) {
   if (shouldIgnoreDecodedText(decodedText)) return;
 
+  clearResultResetTimer();
   scannerState.locked = true;
   const value = String(decodedText || "").trim();
   setScanResult(`识别成功：${value}`, "success");
@@ -396,7 +415,9 @@ async function handleCameraDecoded(decodedText) {
   } finally {
     setTimeout(() => {
       scannerState.locked = false;
-      setScanHint("可以继续扫描下一件。请对准条形码，不是识别数字。");
+      if (!scannerState.resultResetTimer) {
+        setScanHint("可以继续扫描下一件。请对准条形码，不是识别数字。");
+      }
     }, 1200);
   }
 }
@@ -578,10 +599,12 @@ async function handleEntryAdd(trackingNumber) {
   setScanResult(successMessage, "success");
   setScanHint(`${normalizedTracking} 已保存。继续扫下一件即可。`);
   await reloadData();
+  scheduleReadyStateReset();
 }
 
 async function handleLogout() {
   await stopCameraScanner(true);
+  clearResultResetTimer();
   localStorage.removeItem(ACCESS_GATE_KEY);
   sessionStorage.removeItem(ADMIN_PASSWORD_KEY);
   q("app").classList.add("app-hidden");
