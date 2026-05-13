@@ -174,8 +174,8 @@ select {
 
 .scanner-viewport {
   width: 100%;
-  min-height: 150px;
-  max-height: 160px;
+  min-height: 120px;
+  max-height: 130px;
   border-radius: 12px;
   overflow: hidden;
   background: #111827;
@@ -183,7 +183,7 @@ select {
 
 .scanner-viewport video {
   width: 100% !important;
-  height: 160px !important;
+  height: 130px !important;
   object-fit: cover !important;
 }
 
