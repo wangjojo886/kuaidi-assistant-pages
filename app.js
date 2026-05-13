@@ -409,12 +409,6 @@ async function getScannerInstance() {
     scannerState.instance = new Html5Qrcode("scannerViewport", {
       formatsToSupport: [
         Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.CODE_93,
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
         Html5QrcodeSupportedFormats.ITF,
       ],
       verbose: false,
@@ -438,7 +432,7 @@ async function handleCameraDecoded(decodedText) {
     setTimeout(() => {
       scannerState.locked = false;
       if (!scannerState.resultResetTimer) {
-        setScanHint("可以继续扫描下一件。请对准条形码，不是识别数字。");
+        setScanHint("可以继续扫描下一件。请对准快递主条形码，不是识别数字。");
       }
     }, 350);
   }
@@ -481,7 +475,7 @@ async function startCameraScanner() {
     scannerState.running = true;
     setStatus("entryStatus", "摄像头已开启，请扫描条形码。", "success");
     setScanResult("摄像头已开启", "");
-    setScanHint("请直接对准快递面单上的条形码。");
+      setScanHint("请横向对准快递面单上的主条形码。");
   } catch (err) {
     console.error(err);
     scannerState.running = false;
