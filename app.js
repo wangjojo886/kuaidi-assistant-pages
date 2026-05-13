@@ -440,7 +440,7 @@ async function handleCameraDecoded(decodedText) {
       if (!scannerState.resultResetTimer) {
         setScanHint("可以继续扫描下一件。请对准条形码，不是识别数字。");
       }
-    }, 650);
+    }, 350);
   }
 }
 
@@ -455,9 +455,9 @@ async function startCameraScanner() {
   try {
     const scanner = await getScannerInstance();
     const config = {
-      fps: 18,
-      qrbox: { width: 280, height: 100 },
-      aspectRatio: 1.6,
+      fps: 24,
+      qrbox: { width: 300, height: 72 },
+      aspectRatio: 1.9,
       rememberLastUsedCamera: true,
       disableFlip: true,
     };
